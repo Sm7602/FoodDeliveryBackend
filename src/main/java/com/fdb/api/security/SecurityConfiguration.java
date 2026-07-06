@@ -27,8 +27,14 @@ public class SecurityConfiguration {
             .csrf(csrf -> csrf.disable())
 
             .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/api/**")
+                    .requestMatchers("/api/auth/**")
                     .permitAll()
+                    .requestMatchers("/api/customers/**")
+                    .hasRole("CUSTOMER")
+                    .requestMatchers("/api/delivery-partners/**")
+                    .hasRole("DELIVERYPARTNER")
+                    .requestMatchers("/api/restaurants/**")
+                    .hasRole("RESTURANT")
                     .anyRequest()
                     .authenticated())
 

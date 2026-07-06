@@ -34,9 +34,12 @@ public class DeliveryPartnerService {
     public DeliveryPartner updateDeliveryPartner(Long id,DeliveryPartner deliveryPartner) {
         System.out.println("DeliveryPartnerService.updateDeliveryPartner()");
         DeliveryPartner existingPartner =getDeliveryPartnerById(id);
-        existingPartner.setPartnerName(deliveryPartner.getPartnerName());
+        existingPartner.setFirstName(deliveryPartner.getFirstName());
+        existingPartner.setLastName(deliveryPartner.getLastName());
         existingPartner.setPhoneNumber(deliveryPartner.getPhoneNumber());
         existingPartner.setVehicleNumber(deliveryPartner.getVehicleNumber());
+        existingPartner.setDrivingLicenseNumber(deliveryPartner.getDrivingLicenseNumber());
+        existingPartner.setVehicleType(deliveryPartner.getVehicleType());
         existingPartner.setAvailable(deliveryPartner.getAvailable());
         existingPartner.setUpdatedAt(LocalDateTime.now());
         return deliveryPartnerRepository.save(existingPartner);
