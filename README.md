@@ -1,61 +1,104 @@
-# 🍔 FoodDeliveryBackend
+# 🍔 Food Delivery Backend — JWT Authentication
 
-A RESTful backend API for a food delivery platform built with **Spring Boot 4.1**, **Spring Data JPA**, **MySQL**, and **Lombok**. It supports full CRUD operations for Restaurants, Menu Items, Customers, Carts, Orders, Order Items, and Delivery Partners.
+A production-style **REST API backend for a food delivery platform**, built with **Spring Boot 3.5**, **Spring Security 6**, and **JWT (JSON Web Token)** stateless authentication. It models the full delivery domain — customers, restaurants, menus, carts, orders, order items, and delivery partners — backed by **MySQL** via Spring Data JPA.
 
----
-
-## 🗂️ Project Structure
-
-```
-src/main/java/com/fdb/api/
-├── FoodDeliveryBackendApplication.java
-├── controller/
-│   ├── CartController.java
-│   ├── CustomerController.java
-│   ├── DeliveryPartnerController.java
-│   ├── FoodOrderController.java
-│   ├── MenuItemController.java
-│   ├── OrderItemController.java
-│   └── RestaurantController.java
-├── dao/
-│   ├── CartRepository.java
-│   ├── CustomerRepository.java
-│   ├── DeliveryPartnerRepository.java
-│   ├── FoodOrderRepository.java
-│   ├── MenuItemRepository.java
-│   ├── OrderItemRepository.java
-│   └── RestaurantRepository.java
-├── entity/
-│   ├── Cart.java
-│   ├── Customer.java
-│   ├── DeliveryPartner.java
-│   ├── FoodOrder.java
-│   ├── MenuItem.java
-│   ├── OrderItem.java
-│   └── Restaurant.java
-└── service/
-    ├── CartService.java
-    ├── CustomerService.java
-    ├── DeliveryPartnerService.java
-    ├── FoodOrderService.java
-    ├── MenuItemService.java
-    ├── OrderItemService.java
-    └── RestaurantService.java
-```
+![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.3-brightgreen?logo=springboot)
+![Spring Security](https://img.shields.io/badge/Spring%20Security-6-green?logo=springsecurity)
+![JWT](https://img.shields.io/badge/JJWT-0.13.0-blueviolet)
+![MySQL](https://img.shields.io/badge/MySQL-8-blue?logo=mysql)
+![Maven](https://img.shields.io/badge/Build-Maven-red?logo=apachemaven)
 
 ---
 
-## ⚙️ Tech Stack
+## ✨ Features
 
-| Technology         | Version  |
-|--------------------|----------|
-| Java               | 21       |
-| Spring Boot        | 4.1.0    |
-| Spring Data JPA    | (managed)|
-| MySQL Connector    | (managed)|
-| Lombok             | (managed)|
-| Spring DevTools    | (managed)|
-| Maven              | Wrapper  |
+- **JWT-based stateless authentication** — register & login endpoints issue signed HS256 tokens (JJWT 0.13)
+- **Role-based user model** — `CUSTOMER`, `DELIVERYPARTNER`, `RESTURANT` roles via Spring Security `GrantedAuthority`
+- **BCrypt password hashing** with `DaoAuthenticationProvider`
+- **Custom `OncePerRequestFilter`** that validates the `Authorization: Bearer <token>` header on every request
+- **Full CRUD REST APIs** for the entire food-delivery domain (8 controllers)
+- **Rich JPA data model** with `@OneToOne`, `@OneToMany`, `@ManyToOne` relationships
+- **Lombok** for boilerplate-free entities, DTOs, and constructor injection
+- **Auto schema generation** (`ddl-auto=update`) with formatted SQL logging
+
+---
+
+## 🏗️ Architecture
+
+The project follows a classic **layered architecture**:
+
+```
+Client ──▶ JwtAuthenticationFilter ──▶ Controller ──▶ Service ──▶ Repository (DAO) ──▶ MySQL
+                    │
+                    ▼
+               JwtService ◀──▶ UserDetailsService (SecurityContext)
+```
+
+```
+src/main/java/com/fdb/api
+├── FoodDeliveryBackendApplication.java   # Spring Boot entry point
+├── controller/        # REST layer — 8 controllers (@RestController)
+│   ├── AuthgenticationController.java    # /api/auth (register, authenticate)
+│   ├── CustomerController.java           # /api/customers
+│   ├── RestaurantController.java         # /api/restaurants
+│   ├── MenuItemController.java           # /api/menu-items
+│   ├── CartController.java               # /api/carts
+│   ├── FoodOrderController.java          # /api/orders
+│   ├── OrderItemController.java          # /api/order-items
+│   └── DeliveryPartnerController.java    # /api/delivery-partners
+├── service/           # Business logic (AuthenticationService + 7 domain services)
+├── dao/               # Spring Data JPA repositories (8 interfaces)
+├── entity/            # JPA entities: User, Customer, Restaurant, MenuItem,
+│                      #   Cart, FoodOrder, OrderItem, DeliveryPartner, Role
+├── dto/               # RegisterRequest, AuthenticationRequest, AuthenticationResponse
+└── security/          # JWT + Spring Security configuration
+    ├── SecurityConfiguration.java        # SecurityFilterChain (stateless, CSRF off)
+    ├── ApplicationConfig.java            # UserDetailsService, AuthProvider, BCrypt
+    ├── JwtService.java                   # Token generation / parsing / validation
+    └── JwtAuthenticationFilter.java      # Once-per-request Bearer token filter
+```
+
+---
+
+## 🔐 Authentication Flow
+
+1. **Register** — `POST /api/auth/register` → user saved with BCrypt-hashed password → JWT returned
+2. **Login** — `POST /api/auth/authenticate` → credentials verified by `AuthenticationManager` → JWT returned with email & role
+3. **Authenticated requests** — client sends `Authorization: Bearer <token>`; `JwtAuthenticationFilter` extracts the email, loads the user, validates signature + expiry, and populates the `SecurityContext`
+4. **Stateless sessions** — `SessionCreationPolicy.STATELESS`, no server-side session
+
+### Auth API
+
+| Method | Endpoint | Body | Response |
+|--------|----------|------|----------|
+| POST | `/api/auth/register` | `{ firstname, lastname, email, password, role }` | `{ token }` |
+| POST | `/api/auth/authenticate` | `{ email, password }` | `{ token, email, role }` |
+
+---
+
+## 📡 Domain API Overview
+
+| Resource | Base Path | Operations |
+|----------|-----------|------------|
+| Customers | `/api/customers` | Create, Get by ID, Get all, Update, Delete |
+| Restaurants | `/api/restaurants` | CRUD + `GET /search` |
+| Menu Items | `/api/menu-items` | CRUD + `GET /restaurant/{restaurantId}` |
+| Carts | `/api/carts` | Create/Get per customer, Update, Delete, Remove items |
+| Orders | `/api/orders` | Create, Get by ID, Get all, Update, Delete |
+| Order Items | `/api/order-items` | Create (`/{orderId}/{menuItemId}`), CRUD |
+| Delivery Partners | `/api/delivery-partners` | Create, Get by ID, Get all, Update, Delete |
+
+---
+
+## 🗄️ Data Model
+
+- **Customer** 1—1 **Cart**, 1—N **FoodOrder**
+- **Restaurant** 1—N **MenuItem**, 1—N **FoodOrder**
+- **FoodOrder** N—1 Customer / Restaurant / DeliveryPartner, 1—N **OrderItem**
+- **OrderItem** N—1 FoodOrder, N—1 MenuItem
+- **Cart** 1—N MenuItem
+- **User** implements `UserDetails` (email as username, enum `Role`)
 
 ---
 
@@ -64,220 +107,70 @@ src/main/java/com/fdb/api/
 ### Prerequisites
 
 - Java 21+
-- MySQL 8+
-- Maven (or use the included `mvnw` wrapper)
+- MySQL 8.x
+- Maven (or use the bundled `mvnw` wrapper)
 
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/your-username/FoodDeliveryBackend.git
-cd FoodDeliveryBackend
-```
-
-### 2. Configure the database
-
-Create a MySQL database:
-
-```sql
-CREATE DATABASE fooddeliverybackend;
-```
-
-Update `src/main/resources/application.properties` with your credentials:
-
-```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/fooddeliverybackend
-spring.datasource.username=your_mysql_username
-spring.datasource.password=your_mysql_password
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
-```
-
-### 3. Build and run
+### Setup
 
 ```bash
+# 1. Clone
+git clone https://github.com/<your-username>/FoodDeliveryBackend-JWT-Authentication.git
+cd FoodDeliveryBackend-JWT-Authentication
+
+# 2. Create the database
+mysql -u root -p -e "CREATE DATABASE fooddeliverybackend;"
+
+# 3. Configure src/main/resources/application.properties
+#    spring.datasource.username / spring.datasource.password
+
+# 4. Run
 ./mvnw spring-boot:run
 ```
 
-The server will start on **http://localhost:8080**
+The API starts at **http://localhost:8080**.
 
----
+### Quick test
 
-## 📡 API Endpoints
+```bash
+# Register
+curl -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"firstname":"John","lastname":"Doe","email":"john@test.com","password":"secret123","role":"CUSTOMER"}'
 
-### 🏪 Restaurants — `/api/restaurants`
+# Login
+curl -X POST http://localhost:8080/api/auth/authenticate \
+  -H "Content-Type: application/json" \
+  -d '{"email":"john@test.com","password":"secret123"}'
 
-| Method | Endpoint              | Description                  |
-|--------|-----------------------|------------------------------|
-| POST   | `/api/restaurants`    | Create a new restaurant      |
-| GET    | `/api/restaurants`    | Get all restaurants          |
-| GET    | `/api/restaurants/{id}` | Get restaurant by ID       |
-| PUT    | `/api/restaurants/{id}` | Update restaurant          |
-| GET    | `/api/restaurants/search?keyword=` | Search by name  |
-| DELETE | `/api/restaurants/{id}` | Delete a restaurant        |
-| DELETE | `/api/restaurants`    | Delete all restaurants       |
-
-### 🍽️ Menu Items — `/api/menu-items`
-
-| Method | Endpoint                               | Description                    |
-|--------|----------------------------------------|--------------------------------|
-| POST   | `/api/menu-items/{restaurantId}`       | Create menu item for restaurant|
-| GET    | `/api/menu-items`                      | Get all menu items             |
-| GET    | `/api/menu-items/{id}`                 | Get menu item by ID            |
-| GET    | `/api/menu-items/restaurant/{restaurantId}` | Get items by restaurant  |
-| PUT    | `/api/menu-items/{id}`                 | Update menu item               |
-| DELETE | `/api/menu-items/{id}`                 | Delete menu item               |
-
-### 👤 Customers — `/api/customers`
-
-| Method | Endpoint               | Description              |
-|--------|------------------------|--------------------------|
-| POST   | `/api/customers`       | Create a customer        |
-| GET    | `/api/customers`       | Get all active customers |
-| GET    | `/api/customers/{id}`  | Get customer by ID       |
-| PUT    | `/api/customers/{id}`  | Update customer          |
-| DELETE | `/api/customers/{id}`  | Delete customer          |
-| DELETE | `/api/customers`       | Delete all customers     |
-
-### 🛒 Cart — `/api/carts`
-
-| Method | Endpoint                            | Description                     |
-|--------|-------------------------------------|---------------------------------|
-| POST   | `/api/carts/customer/{customerId}`  | Create cart for customer        |
-| GET    | `/api/carts/customer/{customerId}`  | Get cart by customer ID         |
-| PUT    | `/api/carts?cartId=&menuItemId=`    | Add menu item to cart           |
-| DELETE | `/api/carts/{cartId}`               | Delete cart                     |
-| DELETE | `/api/carts/menu-items?cartId=&menuItemId=` | Remove item from cart   |
-
-### 📦 Orders — `/api/orders`
-
-| Method | Endpoint            | Description       |
-|--------|---------------------|-------------------|
-| POST   | `/api/orders`       | Create an order   |
-| GET    | `/api/orders`       | Get all orders    |
-| GET    | `/api/orders/{id}`  | Get order by ID   |
-| PUT    | `/api/orders/{id}`  | Update order      |
-| DELETE | `/api/orders/{id}`  | Delete order      |
-
-### 🧾 Order Items — `/api/order-items`
-
-| Method | Endpoint                                  | Description            |
-|--------|-------------------------------------------|------------------------|
-| POST   | `/api/order-items/{orderId}/{menuItemId}` | Create order item      |
-| GET    | `/api/order-items`                        | Get all order items    |
-| GET    | `/api/order-items/{id}`                   | Get order item by ID   |
-| PUT    | `/api/order-items/{id}`                   | Update order item      |
-| DELETE | `/api/order-items/{id}`                   | Delete order item      |
-
-### 🛵 Delivery Partners — `/api/delivery-partners`
-
-| Method | Endpoint                       | Description                  |
-|--------|--------------------------------|------------------------------|
-| POST   | `/api/delivery-partners`       | Create delivery partner      |
-| GET    | `/api/delivery-partners`       | Get all delivery partners    |
-| GET    | `/api/delivery-partners/{id}`  | Get delivery partner by ID   |
-| PUT    | `/api/delivery-partners/{id}`  | Update delivery partner      |
-| DELETE | `/api/delivery-partners/{id}`  | Delete delivery partner      |
-
----
-
-## ⚠️ Known Issues & Improvements
-
-The following issues were identified during code review. They are good targets for future contributions.
-
-### 🔴 Critical
-
-1. **Hardcoded database credentials in `application.properties`**
-   The file contains a real password (`souvik@7602`). This is a **security risk** if pushed to a public repository. Use environment variables or a `.env` file instead, and add `application.properties` to `.gitignore`.
-   ```properties
-   # Recommended
-   spring.datasource.password=${DB_PASSWORD}
-   ```
-
-2. **`@EnableJpaRepositories` misplaced on `RestaurantRepository`**
-   This annotation belongs on the main application class or a `@Configuration` class, not on a repository interface. It should be removed from `RestaurantRepository.java`.
-
-3. **Infinite recursion / `StackOverflowError` risk on all JSON responses**
-   Bidirectional JPA relationships (e.g., `Customer ↔ Cart`, `Restaurant ↔ MenuItem`, `FoodOrder ↔ OrderItem`) will cause Jackson to infinitely serialize both sides. Fix with `@JsonManagedReference` / `@JsonBackReference` or `@JsonIgnore` on the back-reference side.
-
-4. **`Cart` entity uses `@OneToMany` to `MenuItem` without a join table or cascade config**
-   The `List<MenuItem> menuItems` in `Cart` has no `@JoinTable` annotation. JPA will attempt to generate an ambiguous join table, which may fail or behave unexpectedly. A proper `@JoinTable` with `name`, `joinColumns`, and `inverseJoinColumns` is required.
-
-### 🟠 Moderate
-
-5. **No HTTP response status codes — all endpoints return `200 OK`**
-   Controllers return raw entity objects and plain `String` messages. Use `ResponseEntity<>` to return proper HTTP status codes (`201 Created`, `204 No Content`, `404 Not Found`, etc.).
-
-6. **No global exception handler**
-   `RuntimeException` is thrown directly from services but never caught. This causes a `500 Internal Server Error` with a full stack trace to the client. Add a `@RestControllerAdvice` class to return clean error responses.
-
-7. **`deleteMenuItemfromCart` returns void but controller ignores it**
-   `CartController.deleteMenuItemfromCart()` calls the service but discards the returned updated `Cart`. It only returns a hardcoded string. The updated cart should be returned for consistency.
-
-8. **`FoodOrder.orderStatus` is a raw `String`**
-   Order status should be an `enum` (e.g., `PENDING`, `CONFIRMED`, `PREPARING`, `OUT_FOR_DELIVERY`, `DELIVERED`, `CANCELLED`) to prevent invalid values from being stored.
-
-9. **`Restaurant.rating` is a `Double` with no validation**
-   Rating should be validated to stay within a range (e.g., 0.0–5.0) using `@Min`/`@Max` or a custom validator.
-
-10. **No input validation on any entity**
-    Fields like `email`, `phoneNumber`, `price` have no `@NotNull`, `@Email`, `@Positive`, or `@Size` constraints. Add `spring-boot-starter-validation` and annotate entity/DTO fields.
-
-### 🟡 Minor / Code Quality
-
-11. **Typos in method and variable names**
-    - `getMenuItemByresturentrant()` — should be `getMenuItemsByRestaurant()`
-    - `deleteAllCustomer()` — should be `deleteAllCustomers()`
-    - `deleteAllRestaurant()` / `deleteALLRestaurant()` — inconsistent naming
-
-12. **`System.out.println()` used for logging throughout**
-    Replace all `System.out.println()` calls with a proper logger (e.g., SLF4J via Lombok's `@Slf4j`):
-    ```java
-    @Slf4j
-    public class CartService {
-        // use log.info("CartService.createCart()");
-    }
-    ```
-
-13. **No DTOs — entities are used directly as request/response bodies**
-    Exposing JPA entities directly over the API leaks internal structure and causes the JSON recursion issues above. Introduce DTO classes and a mapping layer (e.g., MapStruct or manual mapping).
-
-14. **`@Autowired` field injection used everywhere**
-    Constructor injection is preferred for testability and to make dependencies explicit. Lombok's `@RequiredArgsConstructor` with `private final` fields is the recommended approach.
-
-15. **No unit or integration tests**
-    The test file `FoodDeliveryBackendApplicationTests.java` is empty (only the context-load test). Add service-layer unit tests and controller integration tests.
-
----
-
-## 🔧 Suggested `application.properties` (safe version)
-
-```properties
-spring.application.name=FoodDeliveryBackend
-server.port=8080
-
-spring.datasource.url=jdbc:mysql://localhost:3306/fooddeliverybackend
-spring.datasource.username=${DB_USERNAME:root}
-spring.datasource.password=${DB_PASSWORD:}
-
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
+# Use the token
+curl http://localhost:8080/api/restaurants \
+  -H "Authorization: Bearer <YOUR_TOKEN>"
 ```
 
 ---
 
-## 🤝 Contributing
+## 🛠️ Tech Stack
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Commit your changes: `git commit -m 'Add some feature'`
-4. Push to the branch: `git push origin feature/your-feature`
-5. Open a Pull Request
+| Layer | Technology |
+|-------|-----------|
+| Language | Java 21 |
+| Framework | Spring Boot 3.5.3 (Web, Data JPA, Security, Validation) |
+| Auth | JJWT 0.13.0 (HS256), BCrypt |
+| Database | MySQL 8 (Hibernate, `ddl-auto=update`) |
+| Boilerplate | Lombok |
+| Build | Maven |
+
+---
+
+## ⚠️ Notes & Roadmap
+
+- `/api/**` is currently `permitAll()` in `SecurityConfiguration` — tighten to `/api/auth/**` only and require authentication elsewhere, then add `@PreAuthorize` role checks per endpoint.
+- Move the JWT secret and DB credentials out of `application.properties` into environment variables (`${JWT_SECRET}`); never commit secrets.
+- Token expiry is currently ~24 seconds (`1000*60*24` ms) — likely intended as 24 hours (`1000*60*60*24`).
+- Planned: refresh tokens, global exception handling (`@ControllerAdvice`), Swagger/OpenAPI docs, unit & integration tests.
 
 ---
 
 ## 📄 License
 
-This project is open source. Add a license file if you intend to share it publicly.
-
+Open source — free to use for learning purposes.
