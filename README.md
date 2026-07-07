@@ -1,6 +1,7 @@
+
 # 🍔 Food Delivery Backend — JWT Authentication
 
-A production-style **REST API backend for a food delivery platform**, built with **Spring Boot 3.5**, **Spring Security 6**, and **JWT (JSON Web Token)** stateless authentication. It models the full delivery domain — customers, restaurants, menus, carts, orders, order items, and delivery partners — backed by **MySQL** via Spring Data JPA.
+A REST API backend for a food delivery platform built with **Spring Boot 3.5**, **Spring Security 6**, and stateless **JWT authentication**. It models the complete delivery domain — customers, restaurants, menus, carts, orders, order items, and delivery partners — with **role-based access control** and MySQL persistence via Spring Data JPA.
 
 ![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.3-brightgreen?logo=springboot)
@@ -13,20 +14,24 @@ A production-style **REST API backend for a food delivery platform**, built with
 
 ## ✨ Features
 
-- **JWT-based stateless authentication** — register & login endpoints issue signed HS256 tokens (JJWT 0.13)
-- **Role-based user model** — `CUSTOMER`, `DELIVERYPARTNER`, `RESTURANT` roles via Spring Security `GrantedAuthority`
-- **BCrypt password hashing** with `DaoAuthenticationProvider`
-- **Custom `OncePerRequestFilter`** that validates the `Authorization: Bearer <token>` header on every request
-- **Full CRUD REST APIs** for the entire food-delivery domain (8 controllers)
-- **Rich JPA data model** with `@OneToOne`, `@OneToMany`, `@ManyToOne` relationships
-- **Lombok** for boilerplate-free entities, DTOs, and constructor injection
-- **Auto schema generation** (`ddl-auto=update`) with formatted SQL logging
+- **Stateless JWT authentication** — HS256-signed tokens issued on register/login (JJWT 0.13)
+- **Three user roles** — `CUSTOMER`, `RESTAURANT`, `DELIVERYPARTNER`, each with its own registration endpoint and profile entity
+- **Role-based URL authorization** — Spring Security route rules restrict each API area to its role
+- **BCrypt password hashing** via `DaoAuthenticationProvider`
+- **Custom `OncePerRequestFilter`** validating `Authorization: Bearer <token>` on every request
+- **Full CRUD REST APIs** across 8 controllers for the entire delivery domain
+- **Rich JPA data model** — `@OneToOne`, `@OneToMany`, `@ManyToOne` relationships
+- **Duplicate-email guard** on all registration flows (returns `409 Conflict`)
+- **Global exception handling** — `@RestControllerAdvice` with custom exceptions and structured JSON error responses (`400/401/404/409/500`)
+- **Request validation** — `@Valid` with Bean Validation (`@NotBlank`, `@Email`, `@Size`) on all auth DTOs
+- **Externalized configuration** — DB credentials, JWT secret & expiry via environment variables
+- **Lombok** builders and constructor injection throughout
 
 ---
 
 ## 🏗️ Architecture
 
-The project follows a classic **layered architecture**:
+Classic layered architecture:
 
 ```
 Client ──▶ JwtAuthenticationFilter ──▶ Controller ──▶ Service ──▶ Repository (DAO) ──▶ MySQL
@@ -38,42 +43,47 @@ Client ──▶ JwtAuthenticationFilter ──▶ Controller ──▶ Service 
 ```
 src/main/java/com/fdb/api
 ├── FoodDeliveryBackendApplication.java   # Spring Boot entry point
-├── controller/        # REST layer — 8 controllers (@RestController)
-│   ├── AuthgenticationController.java    # /api/auth (register, authenticate)
-│   ├── CustomerController.java           # /api/customers
-│   ├── RestaurantController.java         # /api/restaurants
-│   ├── MenuItemController.java           # /api/menu-items
-│   ├── CartController.java               # /api/carts
-│   ├── FoodOrderController.java          # /api/orders
-│   ├── OrderItemController.java          # /api/order-items
-│   └── DeliveryPartnerController.java    # /api/delivery-partners
-├── service/           # Business logic (AuthenticationService + 7 domain services)
-├── dao/               # Spring Data JPA repositories (8 interfaces)
-├── entity/            # JPA entities: User, Customer, Restaurant, MenuItem,
-│                      #   Cart, FoodOrder, OrderItem, DeliveryPartner, Role
-├── dto/               # RegisterRequest, AuthenticationRequest, AuthenticationResponse
-└── security/          # JWT + Spring Security configuration
-    ├── SecurityConfiguration.java        # SecurityFilterChain (stateless, CSRF off)
-    ├── ApplicationConfig.java            # UserDetailsService, AuthProvider, BCrypt
-    ├── JwtService.java                   # Token generation / parsing / validation
-    └── JwtAuthenticationFilter.java      # Once-per-request Bearer token filter
+├── controller/     # 8 REST controllers (auth + 7 domain resources)
+├── service/        # AuthenticationService + 7 domain services
+├── dao/            # 8 Spring Data JPA repositories
+├── entity/         # User, Customer, Restaurant, MenuItem, Cart,
+│                   # FoodOrder, OrderItem, DeliveryPartner, Role (enum)
+├── dto/            # Register requests (per role), AuthenticationRequest/Response
+├── exception/      # Custom exceptions + GlobalExceptionHandler (@RestControllerAdvice)
+└── security/
+    ├── SecurityConfiguration.java    # SecurityFilterChain — stateless, role rules, CSRF off
+    ├── ApplicationConfig.java        # UserDetailsService, AuthProvider, BCrypt
+    ├── JwtService.java               # Token generation / parsing / validation
+    └── JwtAuthenticationFilter.java  # Once-per-request Bearer token filter
 ```
 
 ---
 
-## 🔐 Authentication Flow
+## 🔐 Authentication & Authorization
 
-1. **Register** — `POST /api/auth/register` → user saved with BCrypt-hashed password → JWT returned
-2. **Login** — `POST /api/auth/authenticate` → credentials verified by `AuthenticationManager` → JWT returned with email & role
-3. **Authenticated requests** — client sends `Authorization: Bearer <token>`; `JwtAuthenticationFilter` extracts the email, loads the user, validates signature + expiry, and populates the `SecurityContext`
-4. **Stateless sessions** — `SessionCreationPolicy.STATELESS`, no server-side session
+1. **Register** (per role) → user saved with BCrypt-hashed password + role-specific profile created → JWT returned
+2. **Login** → credentials verified by `AuthenticationManager` → JWT returned
+3. **Authenticated requests** → filter extracts email from the token, loads the user, validates signature + expiry, populates the `SecurityContext`
+4. **Stateless** — `SessionCreationPolicy.STATELESS`, no server-side sessions
 
-### Auth API
+### Auth endpoints (`/api/auth` — public)
 
-| Method | Endpoint | Body | Response |
-|--------|----------|------|----------|
-| POST | `/api/auth/register` | `{ firstname, lastname, email, password, role }` | `{ token }` |
-| POST | `/api/auth/authenticate` | `{ email, password }` | `{ token, email, role }` |
+| Method | Endpoint | Body highlights |
+|--------|----------|-----------------|
+| POST | `/api/auth/registerCustomer` | name, email, password, phone, address |
+| POST | `/api/auth/registerRestaurant` | restaurantName, ownerName, email, password, phone, address |
+| POST | `/api/auth/registerDeliveryPartner` | name, email, password, vehicle & license details |
+| POST | `/api/auth/authenticate` | email, password |
+
+### Route authorization
+
+| Path | Access |
+|------|--------|
+| `/api/auth/**` | Public |
+| `/api/customers/**` | `ROLE_CUSTOMER` |
+| `/api/restaurants/**` | `ROLE_RESTAURANT` |
+| `/api/delivery-partners/**` | `ROLE_DELIVERYPARTNER` |
+| Everything else | Any authenticated user |
 
 ---
 
@@ -83,7 +93,7 @@ src/main/java/com/fdb/api
 |----------|-----------|------------|
 | Customers | `/api/customers` | Create, Get by ID, Get all, Update, Delete |
 | Restaurants | `/api/restaurants` | CRUD + `GET /search` |
-| Menu Items | `/api/menu-items` | CRUD + `GET /restaurant/{restaurantId}` |
+| Menu Items | `/api/menu-items` | Create per restaurant, CRUD, `GET /restaurant/{restaurantId}` |
 | Carts | `/api/carts` | Create/Get per customer, Update, Delete, Remove items |
 | Orders | `/api/orders` | Create, Get by ID, Get all, Update, Delete |
 | Order Items | `/api/order-items` | Create (`/{orderId}/{menuItemId}`), CRUD |
@@ -93,12 +103,11 @@ src/main/java/com/fdb/api
 
 ## 🗄️ Data Model
 
+- **User** implements `UserDetails` (email as username, enum `Role`) — linked 1—1 to a Customer / Restaurant / DeliveryPartner profile
 - **Customer** 1—1 **Cart**, 1—N **FoodOrder**
 - **Restaurant** 1—N **MenuItem**, 1—N **FoodOrder**
 - **FoodOrder** N—1 Customer / Restaurant / DeliveryPartner, 1—N **OrderItem**
 - **OrderItem** N—1 FoodOrder, N—1 MenuItem
-- **Cart** 1—N MenuItem
-- **User** implements `UserDetails` (email as username, enum `Role`)
 
 ---
 
@@ -108,7 +117,7 @@ src/main/java/com/fdb/api
 
 - Java 21+
 - MySQL 8.x
-- Maven (or use the bundled `mvnw` wrapper)
+- Maven (or the bundled `mvnw` wrapper)
 
 ### Setup
 
@@ -120,30 +129,34 @@ cd FoodDeliveryBackend-JWT-Authentication
 # 2. Create the database
 mysql -u root -p -e "CREATE DATABASE fooddeliverybackend;"
 
-# 3. Configure src/main/resources/application.properties
-#    spring.datasource.username / spring.datasource.password
+# 3. Set environment variables (all have local-dev defaults)
+export DB_URL="jdbc:mysql://localhost:3306/fooddeliverybackend"
+export DB_USERNAME="root"
+export DB_PASSWORD="your-password"
+export JWT_SECRET="<base64-encoded-256-bit-key>"   # e.g. openssl rand -base64 32
+export JWT_EXPIRATION=86400000                      # 24 hours in ms
 
 # 4. Run
 ./mvnw spring-boot:run
 ```
 
-The API starts at **http://localhost:8080**.
+The API starts at **http://localhost:8080**. Hibernate creates the schema automatically (`ddl-auto=update`).
 
 ### Quick test
 
 ```bash
-# Register
-curl -X POST http://localhost:8080/api/auth/register \
+# Register a customer
+curl -X POST http://localhost:8080/api/auth/registerCustomer \
   -H "Content-Type: application/json" \
-  -d '{"firstname":"John","lastname":"Doe","email":"john@test.com","password":"secret123","role":"CUSTOMER"}'
+  -d '{"firstName":"John","lastName":"Doe","email":"john@test.com","password":"secret123","phone":"9999999999","address":"Kolkata"}'
 
 # Login
 curl -X POST http://localhost:8080/api/auth/authenticate \
   -H "Content-Type: application/json" \
   -d '{"email":"john@test.com","password":"secret123"}'
 
-# Use the token
-curl http://localhost:8080/api/restaurants \
+# Call a protected endpoint with the token
+curl http://localhost:8080/api/customers \
   -H "Authorization: Bearer <YOUR_TOKEN>"
 ```
 
@@ -156,18 +169,47 @@ curl http://localhost:8080/api/restaurants \
 | Language | Java 21 |
 | Framework | Spring Boot 3.5.3 (Web, Data JPA, Security, Validation) |
 | Auth | JJWT 0.13.0 (HS256), BCrypt |
-| Database | MySQL 8 (Hibernate, `ddl-auto=update`) |
+| Database | MySQL 8 + Hibernate (`ddl-auto=update`) |
 | Boilerplate | Lombok |
 | Build | Maven |
 
 ---
 
-## ⚠️ Notes & Roadmap
+## 🚦 Error Handling
 
-- `/api/**` is currently `permitAll()` in `SecurityConfiguration` — tighten to `/api/auth/**` only and require authentication elsewhere, then add `@PreAuthorize` role checks per endpoint.
-- Move the JWT secret and DB credentials out of `application.properties` into environment variables (`${JWT_SECRET}`); never commit secrets.
-- Token expiry is currently ~24 seconds (`1000*60*24` ms) — likely intended as 24 hours (`1000*60*60*24`).
-- Planned: refresh tokens, global exception handling (`@ControllerAdvice`), Swagger/OpenAPI docs, unit & integration tests.
+All errors return a consistent JSON structure:
+
+```json
+{
+  "timestamp": "2026-07-07T12:00:00",
+  "status": 409,
+  "error": "Conflict",
+  "message": "Email is already registered. Please login.",
+  "fieldErrors": null
+}
+```
+
+| Case | Status |
+|------|--------|
+| Validation failure (`@Valid`) | `400` + per-field errors |
+| Wrong email/password | `401` |
+| Resource not found | `404` |
+| Email already registered | `409` |
+| Unexpected error | `500` |
+
+---
+
+## 🗺️ Roadmap
+
+- [x] Externalize JWT secret & DB credentials to environment variables
+- [x] Configurable token expiry (24 h default)
+- [x] Global exception handling with `@RestControllerAdvice` + custom exceptions
+- [x] Request validation with `@Valid` on DTOs
+- [ ] Refresh tokens
+- [ ] Swagger / OpenAPI documentation
+- [ ] Unit & integration tests (JUnit 5, MockMvc, Testcontainers)
+- [ ] Pagination & sorting on list endpoints
+- [ ] Docker Compose setup (app + MySQL)
 
 ---
 
