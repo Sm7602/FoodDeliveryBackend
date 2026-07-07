@@ -31,19 +31,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 			@NonNull FilterChain filterChain)
 			throws ServletException, IOException {
 		
+		System.out.println("Request URI: " + request.getRequestURI());
 		final String authHeader=request.getHeader("Authorization");
 		
 		final String jwt;
 		 
 		final String userEmail;
 		 
-		 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-			    filterChain.doFilter(request, response);
-			    return;
-			}
+		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+		    filterChain.doFilter(request, response);
+		    return;
+		}
 		 
 		 jwt= authHeader.substring(7);
+		 System.out.println("JWT: " + jwt);
+		 
 		 userEmail=jwtService.extractUsername(jwt);
+		 System.out.println("User Email: " + userEmail);
 		 
 		 if(userEmail != null && SecurityContextHolder.getContext().getAuthentication()== null) {
 			 
@@ -52,6 +56,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 					 .loadUserByUsername(userEmail);
 			 
 			 if(jwtService.istokenValid(jwt, userDetails)) {
+				 System.out.println("JWT VALID");
 				 UsernamePasswordAuthenticationToken authToken= new UsernamePasswordAuthenticationToken(
 						userDetails,
 						null,
@@ -64,8 +69,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 				 SecurityContextHolder
 				                    .getContext()
 				                    .setAuthentication(authToken);
+				 System.out.println("Authentication Set");
+			 }else {
+				    System.out.println("JWT INVALID");
 			 }
 		 }
+		 
 		 filterChain.doFilter(request, response);
 	}
 

@@ -2,6 +2,7 @@ package com.fdb.api.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -28,6 +29,10 @@ public class SecurityConfiguration {
 
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/api/auth/**")
+                    .permitAll()
+                    .requestMatchers("/error")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/customers")
                     .permitAll()
                     .requestMatchers("/api/customers/**")
                     .hasRole("CUSTOMER")
