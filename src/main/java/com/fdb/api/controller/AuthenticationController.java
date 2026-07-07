@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-public class AuthgenticationController {
+public class AuthenticationController {
 	
 	private final AuthenticationService service;
 
