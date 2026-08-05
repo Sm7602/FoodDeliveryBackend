@@ -10,8 +10,12 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.fdb.api.entity.DeliveryPartner;
+import com.fdb.api.dto.deliverypartner.DeliveryPartnerRequest;
+import com.fdb.api.dto.deliverypartner.DeliveryPartnerResponse;
+import com.fdb.api.dto.deliverypartner.DeliveryPartnerUpdateRequest;
 import com.fdb.api.service.DeliveryPartnerService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/delivery-partners")
@@ -21,27 +25,27 @@ public class DeliveryPartnerController {
     private DeliveryPartnerService deliveryPartnerService;
 
     @PostMapping
-    public DeliveryPartner createDeliveryPartner( @RequestBody DeliveryPartner deliveryPartner) {
+    public  DeliveryPartnerResponse createDeliveryPartner(@Valid @RequestBody DeliveryPartnerRequest request) {
         System.out.println("DeliveryPartnerController.createDeliveryPartner()");
-        return deliveryPartnerService.createDeliveryPartner(deliveryPartner);
+        return deliveryPartnerService.createDeliveryPartner(request);
     }
 
     @GetMapping("/{id}")
-    public DeliveryPartner getDeliveryPartnerById(@PathVariable Long id) {
+    public  DeliveryPartnerResponse getDeliveryPartnerById(@PathVariable Long id) {
         System.out.println("DeliveryPartnerController.getDeliveryPartnerById()");
         return deliveryPartnerService.getDeliveryPartnerById(id);
     }
 
     @GetMapping
-    public List<DeliveryPartner> getAllDeliveryPartners() {
+    public List< DeliveryPartnerResponse> getAllDeliveryPartners() {
         System.out.println("DeliveryPartnerController.getAllDeliveryPartners()");
         return deliveryPartnerService.getAllDeliveryPartners();
     }
 
     @PutMapping("/{id}")
-    public DeliveryPartner updateDeliveryPartner(@PathVariable Long id,@RequestBody DeliveryPartner deliveryPartner) {
+    public  DeliveryPartnerResponse updateDeliveryPartner(@PathVariable Long id,@Valid @RequestBody DeliveryPartnerUpdateRequest request) {
         System.out.println("DeliveryPartnerController.updateDeliveryPartner()");
-        return deliveryPartnerService.updateDeliveryPartner(id, deliveryPartner);
+        return deliveryPartnerService.updateDeliveryPartner(id, request);
     }
 
     @DeleteMapping("/{id}")
