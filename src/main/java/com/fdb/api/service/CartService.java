@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 import com.fdb.api.dao.CartRepository;
 import com.fdb.api.dao.CustomerRepository;
 import com.fdb.api.dao.MenuItemRepository;
+import com.fdb.api.dto.cart.CartRequest;
+import com.fdb.api.dto.cart.CartResponse;
 import com.fdb.api.entity.Cart;
 import com.fdb.api.entity.Customer;
 import com.fdb.api.entity.MenuItem;
@@ -21,10 +23,22 @@ public class CartService {
 
     @Autowired
     private MenuItemRepository menuItemRepository;
+    
+    private CartResponse convertToResponse(Cart cart) {
 
-    public Cart createCart(Long customerId) {
+        return CartResponse.builder()
+                .id(cart.getId())
+                .active(cart.getActive())
+                .createdAt(cart.getCreatedAt())
+                .updatedAt(cart.getUpdatedAt())
+                .customerId(cart.getCustomer().getId())
+                .menuItems(cart.getMenuItems())
+                .build();
+    }
+
+    public CartResponse createCart(CartRequest request) {
         System.out.println("CartService.createCart()");
-        Customer customer = customerRepository.findById(customerId).orElseThrow(() ->
+        Customer customer = customerRepository.findById(request.getCustomerId()).orElseThrow(() ->
                         new RuntimeException("Customer not found"));
 
         Cart cart = new Cart();
@@ -34,29 +48,38 @@ public class CartService {
         cart.setCreatedAt(LocalDateTime.now());
         cart.setUpdatedAt(LocalDateTime.now());
         cart.setActive(true);
-        return cartRepository.save(cart);
+        
+        cart=cartRepository.save(cart);
+        
+        return convertToResponse(cart);
     }
 
     
-        public Cart getCartByCustomerId(Long customerId) {
+        public CartResponse getCartByCustomerId(CartRequest request) {
         	System.out.println("CartService.getCartByCustomerId()");
-            return cartRepository.findByCustomerId(customerId).orElseThrow(() ->
+           Cart cart= cartRepository.findByCustomerId(request.getCustomerId()).orElseThrow(() ->
                             new RuntimeException("Cart not found"));
+           
+           return convertToResponse(cart);
         }
    
 
-    public Cart addMenuItemToCart(Long cartId,Long menuItemId) {
+    public CartResponse addMenuItemToCart(CartRequest request) {
     	System.out.println("CartService.addMenuItemToCart()");
-        Cart cart = cartRepository.findById(cartId).orElseThrow(() ->
-                        new RuntimeException("Cart not found"));
+    	 Cart cart= cartRepository.findByCustomerId(request.getCustomerId()).orElseThrow(() ->
+                              new RuntimeException("Cart not found"));
 
-        MenuItem menuItem = menuItemRepository.findById(menuItemId).orElseThrow(() ->
+        MenuItem menuItem = menuItemRepository.findById(request.getMenuItemId()).orElseThrow(() ->
                         new RuntimeException("Menu Item not found"));
 
         cart.getMenuItems().add(menuItem);
         cart.setTotalAmount(cart.getTotalAmount().add(menuItem.getPrice()));
         cart.setUpdatedAt(LocalDateTime.now());
-        return cartRepository.save(cart);
+
+
+        cart = cartRepository.save(cart);
+
+              return convertToResponse(cart);
     }
 
     public void deleteCart(Long cartId) {
@@ -72,18 +95,24 @@ public class CartService {
     	    cartRepository.delete(cart);
     }
     
-    public Cart deleteMenuItemfromCart(Long cartId,Long menuItemId) {
+    public CartResponse deleteMenuItemfromCart(CartRequest request) {
     	System.out.println("CartService.deleteMenuItemfromCart()");
-    	    Cart cart = cartRepository.findById(cartId).orElseThrow(() ->
-    	                    new RuntimeException("Cart not found"));
+   	 Cart cart= cartRepository.findByCustomerId(request.getCustomerId()).orElseThrow(() ->
+                    new RuntimeException("Cart not found"));
 
-    	    MenuItem menuItem = menuItemRepository.findById(menuItemId).orElseThrow(() ->
-    	                    new RuntimeException("Menu Item not found"));
+   MenuItem menuItem = menuItemRepository.findById(request.getMenuItemId()).orElseThrow(() ->
+                 new RuntimeException("Menu Item not found"));
 
-    	    cart.getMenuItems().remove(menuItem);
-    	    cart.setTotalAmount(cart.getTotalAmount().subtract(menuItem.getPrice()));
-    	    cart.setUpdatedAt(LocalDateTime.now());
-    	    return cartRepository.save(cart);
+   	    cart.getMenuItems().remove(menuItem);
+   	    cart.setTotalAmount(cart.getTotalAmount().subtract(menuItem.getPrice()));
+   	    cart.setUpdatedAt(LocalDateTime.now());
+
+   	    cart = cartRepository.save(cart);
+   	    
+   	 cart = cartRepository.save(cart);
+
+     return convertToResponse(cart);
+   	    
     }
     
     

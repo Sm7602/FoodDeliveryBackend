@@ -5,11 +5,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.fdb.api.dto.AuthenticationRequest;
-import com.fdb.api.dto.AuthenticationResponse;
-import com.fdb.api.dto.CustomerRegisterRequest;
-import com.fdb.api.dto.DeliveryPartnerRegisterRequest;
-import com.fdb.api.dto.RestaurantRegisterRequest;
+
+import com.fdb.api.dto.auth.AuthenticationRequest;
+import com.fdb.api.dto.auth.AuthenticationResponse;
+import com.fdb.api.dto.auth.CustomerRegisterRequest;
+import com.fdb.api.dto.auth.DeliveryPartnerRegisterRequest;
+import com.fdb.api.dto.auth.RestaurantRegisterRequest;
 import com.fdb.api.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
 

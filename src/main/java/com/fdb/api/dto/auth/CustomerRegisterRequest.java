@@ -1,4 +1,4 @@
-package com.fdb.api.dto;
+package com.fdb.api.dto.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,11 +9,11 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RestaurantRegisterRequest {
+public class CustomerRegisterRequest {
 
-    private String restaurantName;
+    private String firstName;
 
-    private String ownerName;
+    private String lastName;
 
     private String email;
 
@@ -22,6 +22,4 @@ public class RestaurantRegisterRequest {
     private String phone;
 
     private String address;
-
-    private String licenseNumber;
 }

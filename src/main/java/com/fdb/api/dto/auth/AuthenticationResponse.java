@@ -1,4 +1,4 @@
-package com.fdb.api.dto;
+package com.fdb.api.dto.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,9 +9,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class AuthenticationRequest {
-
-	private String email;
-	
-	private String password;
+public class AuthenticationResponse {
+   
+	private String token;
+    private String email;
+    private String role;
 }
