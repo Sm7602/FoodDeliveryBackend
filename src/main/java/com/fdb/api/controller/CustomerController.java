@@ -9,8 +9,12 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.fdb.api.entity.Customer;
+import com.fdb.api.dto.customer.CustomerRequest;
+import com.fdb.api.dto.customer.CustomerResponse;
+import com.fdb.api.dto.customer.CustomerUpdateRequest;
 import com.fdb.api.service.CustomerService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/customers")
@@ -21,27 +25,27 @@ public class CustomerController {
 
     
     @PostMapping
-    public Customer createCustomer(@RequestBody Customer customer) {
+    public CustomerResponse createCustomer(@Valid @RequestBody CustomerRequest request)  {
     	System.out.println("CustomerController.createCustomer()");
-        return customerService.createCustomer(customer);
+        return customerService.createCustomer(request);
     }
  
     @GetMapping("/{id}")
-    public Customer getCustomerById(@PathVariable Long id) {
+    public CustomerResponse getCustomerById(@PathVariable Long id) {
     	System.out.println("CustomerController.getCustomerById()");
     	return customerService.getCustomerById(id);  	
     }
    
     @GetMapping
-    public List<Customer> getAllCustomers() {
+    public List<CustomerResponse> getAllCustomers() {
     	System.out.println("CustomerController.getAllCustomers()");
         return customerService.getAllCustomers();
     }
 
     @PutMapping("/{id}")
-    public Customer updateCustomer(@PathVariable Long id,@RequestBody Customer customer) {
+    public CustomerResponse updateCustomer(@PathVariable Long id,@Valid @RequestBody CustomerUpdateRequest request) {
     	System.out.println("CustomerController.updateCustomer()");
-        return customerService.updateCustomer(id, customer);
+        return customerService.updateCustomer(id, request);
     }
 
     @DeleteMapping("/{id}")

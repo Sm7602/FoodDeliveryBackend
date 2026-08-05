@@ -1,0 +1,20 @@
+package com.fdb.api.dto.customer;
+
+import lombok.Data;
+
+@Data
+public class CustomerUpdateRequest {
+	
+	
+	    private String firstName;
+
+	    
+	    private String lastName;
+
+	    
+	    private String phoneNumber;
+
+	
+	    private String address;
+
+}

@@ -4,49 +4,90 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.fdb.api.dao.CustomerRepository;
+import com.fdb.api.dto.customer.CustomerRequest;
+import com.fdb.api.dto.customer.CustomerResponse;
+import com.fdb.api.dto.customer.CustomerUpdateRequest;
 import com.fdb.api.entity.Customer;
+import com.fdb.api.entity.User;
 
 @Service
 public class CustomerService {
 
     @Autowired
     private CustomerRepository customerRepository;
+    
+    private CustomerResponse convertToResponse(Customer customer) {
+
+        return CustomerResponse.builder()
+                .id(customer.getId())
+                .firstName(customer.getFirstName())
+                .lastName(customer.getLastName())
+                .phoneNumber(customer.getPhoneNumber())
+                .address(customer.getAddress())
+                .active(customer.getActive())
+                .createdAt(customer.getCreatedAt())
+                .updatedAt(customer.getUpdatedAt())
+                .orders(customer.getOrders())
+                .cart(customer.getCart())
+                .userId(customer.getUser().getId())
+                .build();
+    }
 
     
-    public Customer createCustomer(Customer customer) {
+    public CustomerResponse createCustomer(CustomerRequest request) {
     	System.out.println("CustomerService.createCustomer()");
-        customer.setCreatedAt(LocalDateTime.now());
-        customer.setUpdatedAt(LocalDateTime.now());
-        customer.setActive(true);
-        return customerRepository.save(customer);
+   
+    	User user=User.builder()
+    			.id(request.getUserId())
+    			.build();
+    	
+    	Customer customer=Customer.builder()
+				.firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .phoneNumber(request.getPhoneNumber())
+                .address(request.getAddress())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .user(user)
+                .active(true)
+                .build();
+		
+		customer=customerRepository.save(customer);
+		return convertToResponse(customer);
+	
     }
 
 
-    public Customer getCustomerById(Long id) {
+    public CustomerResponse getCustomerById(Long id) {
     	System.out.println("CustomerService.getCustomerById()");
-        return customerRepository.findById(id).orElseThrow(() ->
+    	Customer customer= customerRepository.findById(id).orElseThrow(() ->
                         new RuntimeException("Customer not found with id : " + id));
+    	return convertToResponse(customer);
     }
 
     
-    public List<Customer> getAllCustomers() {
+    public List<CustomerResponse> getAllCustomers() {
     	System.out.println("CustomerService.getAllCustomers()");
-        return customerRepository.findByActiveTrue();
+        return customerRepository.findByActiveTrue()
+        		    .stream()
+	            .map(this::convertToResponse)
+	            .toList();
     }
 
 
-    public Customer updateCustomer(Long id, Customer customer) {
+    public CustomerResponse  updateCustomer(long id,CustomerUpdateRequest request)  {
     	System.out.println("CustomerService.updateCustomer()");
         Customer existingCustomer = customerRepository.findById(id).orElseThrow(() ->
                         new RuntimeException("Customer not found with id : " + id));
 
-        existingCustomer.setFirstName(customer.getFirstName());
-        existingCustomer.setLastName(customer.getLastName());
-        existingCustomer.setPhoneNumber(customer.getPhoneNumber());
-        existingCustomer.setAddress(customer.getAddress());
+        existingCustomer.setFirstName(request.getFirstName());
+        existingCustomer.setLastName(request.getLastName());
+        existingCustomer.setPhoneNumber(request.getPhoneNumber());
+        existingCustomer.setAddress(request.getAddress());
         existingCustomer.setUpdatedAt(LocalDateTime.now());
 
-        return customerRepository.save(existingCustomer);
+        existingCustomer=customerRepository.save(existingCustomer);
+		return convertToResponse(existingCustomer);
     }
 
 
