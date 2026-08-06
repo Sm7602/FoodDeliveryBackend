@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 import com.fdb.api.dao.FoodOrderRepository;
 import com.fdb.api.dao.MenuItemRepository;
 import com.fdb.api.dao.OrderItemRepository;
+import com.fdb.api.dto.orderitem.OrderItemRequest;
+import com.fdb.api.dto.orderitem.OrderItemResponse;
+import com.fdb.api.dto.orderitem.OrderItemUpdateRequest;
 import com.fdb.api.entity.FoodOrder;
 import com.fdb.api.entity.MenuItem;
 import com.fdb.api.entity.OrderItem;
@@ -24,50 +27,79 @@ public class OrderItemService {
     @Autowired
     private MenuItemRepository menuItemRepository;
     
-    public OrderItem createOrderItem(Long orderId,Long menuItemId,OrderItem orderItem) {
+    private OrderItemResponse convertToResponse(OrderItem orderItem) {
+
+        return OrderItemResponse.builder()
+        		    .id(orderItem.getId())
+        		    .quantity(orderItem.getQuantity())
+        		    .itemPrice(orderItem.getItemPrice())
+        		    .subtotal(orderItem.getSubtotal())
+        		    .active(orderItem.getActive())
+        		    .updatedAt(orderItem.getUpdatedAt())
+        		    .createdAt(orderItem.getCreatedAt())
+        		    .menuItem(orderItem.getMenuItem())
+        		    .foodOrder(orderItem.getFoodOrder())
+                .build();
+    }
+    
+    public OrderItemResponse createOrderItem(OrderItemRequest request) {
         System.out.println("OrderItemService.createOrderItem()");
-        FoodOrder foodOrder = foodOrderRepository.findById(orderId)
+        FoodOrder foodOrder = foodOrderRepository.findById(request.getFoodOrderId())
                         .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        MenuItem menuItem = menuItemRepository.findById(menuItemId)
+        MenuItem menuItem = menuItemRepository.findById(request.getMenuItemId())
                         .orElseThrow(() -> new RuntimeException("Menu Item not found"));
-        orderItem.setCreatedAt(LocalDateTime.now());
-        orderItem.setUpdatedAt(LocalDateTime.now());
-        orderItem.setActive(true);
-        orderItem.setFoodOrder(foodOrder);
-        orderItem.setMenuItem(menuItem);
-        orderItem.setSubtotal(menuItem.getPrice()
-                                .multiply(BigDecimal.valueOf(orderItem.getQuantity())));
+        
+        OrderItem orderItem=OrderItem.builder()
+        		.quantity(request.getQuantity())
+    		    .itemPrice(request.getItemPrice())
+    		    .subtotal((menuItem.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()))))
+    		    .active(true)
+    		    .createdAt(LocalDateTime.now())
+            .updatedAt(LocalDateTime.now())
+    		    .menuItem(menuItem)
+    		    .foodOrder(foodOrder)
+        		.build();
 
-               return orderItemRepository.save(orderItem);
-}
+        orderItem= orderItemRepository.save(orderItem);
+        return convertToResponse(orderItem);
+    }
 
-    public OrderItem getOrderItemById(Long id) {
+    public OrderItemResponse getOrderItemById(Long id) {
         System.out.println("OrderItemService.getOrderItemById()");
-        return orderItemRepository.findById(id).orElseThrow(() ->
+        OrderItem orderItem=orderItemRepository.findById(id).orElseThrow(() ->
                         new RuntimeException("Order Item not found"));
+        return convertToResponse(orderItem);
     }
 
-    public List<OrderItem> getAllOrderItems() {
+    public List<OrderItemResponse> getAllOrderItems() {
         System.out.println("OrderItemService.getAllOrderItems()");
-        return orderItemRepository.findAll();
+        return orderItemRepository.findAll()
+        		     .stream()
+                 .map(this::convertToResponse)
+                 .toList();
     }
 
-    public OrderItem updateOrderItem(Long id, OrderItem orderItem) {
+    public OrderItemResponse updateOrderItem(Long id, OrderItemUpdateRequest request) {
         System.out.println("OrderItemService.updateOrderItem()");
-        OrderItem existingOrderItem = getOrderItemById(id);
-        existingOrderItem.setQuantity(orderItem.getQuantity());
-        existingOrderItem.setItemPrice(orderItem.getItemPrice());
-        existingOrderItem.setSubtotal(orderItem.getItemPrice()
-                        .multiply(BigDecimal.valueOf(orderItem.getQuantity())));
-        existingOrderItem.setActive(orderItem.getActive());
+        OrderItem existingOrderItem = orderItemRepository.findById(id).orElseThrow(() ->
+        new RuntimeException("Order Item not found"));
+        
+        existingOrderItem.setQuantity(request.getQuantity());
+        existingOrderItem.setItemPrice(request.getItemPrice());
+        existingOrderItem.setSubtotal(request.getItemPrice()
+                        .multiply(BigDecimal.valueOf(request.getQuantity())));
+        existingOrderItem.setActive(request.getActive());
         existingOrderItem.setUpdatedAt(LocalDateTime.now());
-        return orderItemRepository.save(existingOrderItem);
-    }
+
+        existingOrderItem= orderItemRepository.save(existingOrderItem);
+        return convertToResponse(existingOrderItem);
+  }
 
     public void deleteOrderItem(Long id) {
         System.out.println("OrderItemService.deleteOrderItem()");
-        OrderItem orderItem = getOrderItemById(id);
+        OrderItem orderItem = orderItemRepository.findById(id).orElseThrow(() ->
+        new RuntimeException("Order Item not found"));
         orderItemRepository.delete(orderItem);
     }
 }

@@ -10,8 +10,13 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.fdb.api.entity.OrderItem;
+
+import com.fdb.api.dto.orderitem.OrderItemRequest;
+import com.fdb.api.dto.orderitem.OrderItemResponse;
+import com.fdb.api.dto.orderitem.OrderItemUpdateRequest;
 import com.fdb.api.service.OrderItemService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/order-items")
@@ -20,28 +25,28 @@ public class OrderItemController {
     @Autowired
     private OrderItemService orderItemService;
 
-    @PostMapping("/{orderId}/{menuItemId}")
-    public OrderItem createOrderItem( @PathVariable Long orderId,@PathVariable Long menuItemId, @RequestBody OrderItem orderItem) {
+    @PostMapping
+    public OrderItemResponse createOrderItem(@Valid @RequestBody OrderItemRequest request) {
         System.out.println("OrderItemController.createOrderItem()");
-        return orderItemService.createOrderItem(orderId, menuItemId,orderItem);
+        return orderItemService.createOrderItem(request);
     }
 
     @GetMapping("/{id}")
-    public OrderItem getOrderItemById(@PathVariable Long id) {
+    public OrderItemResponse getOrderItemById(@PathVariable Long id) {
         System.out.println("OrderItemController.getOrderItemById()");
         return orderItemService.getOrderItemById(id);
     }
 
     @GetMapping
-    public List<OrderItem> getAllOrderItems() {
+    public List<OrderItemResponse> getAllOrderItems() {
         System.out.println("OrderItemController.getAllOrderItems()");
         return orderItemService.getAllOrderItems();
     }
 
     @PutMapping("/{id}")
-    public OrderItem updateOrderItem(@PathVariable Long id,@RequestBody OrderItem orderItem) {
+    public OrderItemResponse updateOrderItem(@PathVariable Long id,@Valid @RequestBody OrderItemUpdateRequest request) {
         System.out.println("OrderItemController.updateOrderItem()");
-        return orderItemService.updateOrderItem(id, orderItem);
+        return orderItemService.updateOrderItem(id, request);
     }
 
     @DeleteMapping("/{id}")
