@@ -10,8 +10,12 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.fdb.api.entity.MenuItem;
+import com.fdb.api.dto.menuitem.MenuItemRequest;
+import com.fdb.api.dto.menuitem.MenuItemResponse;
+import com.fdb.api.dto.menuitem.MenuItemUpdateRequest;
 import com.fdb.api.service.MenuItemService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/menu-items")
@@ -21,33 +25,33 @@ public class MenuItemController {
     private MenuItemService menuItemService;
 
     @PostMapping("/{restaurantId}")
-    public MenuItem createMenuItem(@PathVariable Long restaurantId, @RequestBody MenuItem menuItem) {
+    public MenuItemResponse createMenuItem(@Valid @RequestBody MenuItemRequest request)  {
         System.out.println("MenuItemController.createMenuItem()");
-    	return menuItemService.createMenuItem(restaurantId, menuItem);
+    	return menuItemService.createMenuItem(request);
     }
 
     @GetMapping("/{id}")
-    public MenuItem getMenuItemById(@PathVariable Long id) {
+    public MenuItemResponse getMenuItemById(@PathVariable Long id) {
         System.out.println("MenuItemController.getMenuItemById()");
         return menuItemService.getMenuItemById(id);
     }
 
     @GetMapping
-    public List<MenuItem> getAllMenuItems() {
+    public List<MenuItemResponse> getAllMenuItems() {
         System.out.println("MenuItemController.getAllMenuItems()");
         return menuItemService.getAllMenuItems();
     }
     
     @GetMapping("/restaurant/{restaurantId}")
-    public List<MenuItem> getMenuItemByresturentrant(@PathVariable Long restaurantId) {
+    public List<MenuItemResponse> getMenuItemByresturentrant(@PathVariable Long restaurantId) {
         System.out.println("MenuItemController.getMenuItemByRestaurant()");
         return menuItemService.getMenuItemByresturentrant(restaurantId);
     }
 
     @PutMapping("/{id}")
-    public MenuItem updateMenuItem(@PathVariable Long id,@RequestBody MenuItem menuItem) {
+    public MenuItemResponse updateMenuItem(@PathVariable Long id,@Valid @RequestBody MenuItemUpdateRequest request) {
         System.out.println("MenuItemController.updateMenuItem()");
-        return menuItemService.updateMenuItem(id, menuItem);
+        return menuItemService.updateMenuItem(id, request);
     }
 
     @DeleteMapping("/{id}")
