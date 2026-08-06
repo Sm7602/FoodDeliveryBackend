@@ -10,8 +10,12 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.fdb.api.entity.FoodOrder;
+import com.fdb.api.dto.foodorder.FoodOrderRequest;
+import com.fdb.api.dto.foodorder.FoodOrderResponse;
+import com.fdb.api.dto.foodorder.FoodOrderUpdateRequest;
 import com.fdb.api.service.FoodOrderService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -21,25 +25,25 @@ public class FoodOrderController {
     private FoodOrderService foodOrderService;
 
     @PostMapping
-    public FoodOrder createOrder(@RequestBody FoodOrder foodOrder) {
+    public FoodOrderResponse createOrder(@Valid @RequestBody FoodOrderRequest request) {
         System.out.println("FoodOrderController.createOrder()");
-        return foodOrderService.createOrder(foodOrder);
+        return foodOrderService.createOrder(request);
     }
 
     @GetMapping("/{id}")
-    public FoodOrder getOrderById(@PathVariable Long id) {
+    public FoodOrderResponse getOrderById(@PathVariable Long id) {
         System.out.println("FoodOrderController.getOrderById()");
         return foodOrderService.getOrderById(id);
     }
 
     @GetMapping
-    public List<FoodOrder> getAllOrders() {
+    public List<FoodOrderResponse> getAllOrders() {
         System.out.println("FoodOrderController.getAllOrders()");
         return foodOrderService.getAllOrders();
     }
 
     @PutMapping("/{id}")
-    public FoodOrder updateOrder(@PathVariable Long id,@RequestBody FoodOrder foodOrder) {
+    public FoodOrderResponse updateOrder(@PathVariable Long id,@Valid @RequestBody FoodOrderUpdateRequest foodOrder) {
         System.out.println("FoodOrderController.updateOrder()");
         return foodOrderService.updateOrder(id, foodOrder);
     }
