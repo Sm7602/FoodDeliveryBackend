@@ -11,8 +11,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.fdb.api.entity.Restaurant;
+
+import com.fdb.api.dto.restaurant.RestaurantRequest;
+import com.fdb.api.dto.restaurant.RestaurantResponse;
+import com.fdb.api.dto.restaurant.RestaurantUpdateRequest;
 import com.fdb.api.service.RestaurantService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/restaurants")
@@ -22,31 +27,31 @@ public class RestaurantController {
     private RestaurantService restaurantService;
 
     @PostMapping
-    public Restaurant createRestaurant(@RequestBody Restaurant restaurant) {
+    public RestaurantResponse createRestaurant(@Valid @RequestBody RestaurantRequest request)  {
         System.out.println("RestaurantController.createRestaurant()");
-        return restaurantService.createRestaurant(restaurant);
+        return restaurantService.createRestaurant(request);
     }
 
     @GetMapping
-    public List<Restaurant> getAllRestaurants() {
+    public List<RestaurantResponse> getAllRestaurants() {
         System.out.println("RestaurantController.getAllRestaurants()");
         return restaurantService.getAllRestaurants();
     }
 
     @GetMapping("/{id}")
-    public Restaurant getRestaurantById(@PathVariable Long id) {
+    public RestaurantResponse getRestaurantById(@PathVariable Long id) {
         System.out.println("RestaurantController.getRestaurantById()");
         return restaurantService.getRestaurantById(id);
     }
 
     @PutMapping("/{id}")
-    public Restaurant updateRestaurant(@PathVariable Long id,@RequestBody Restaurant restaurant) {
+    public RestaurantResponse updateRestaurant(@PathVariable Long id,@Valid @RequestBody RestaurantUpdateRequest request) {
         System.out.println("RestaurantController.updateRestaurant()");
-    	return restaurantService.updateRestaurant(id, restaurant);
+    	return restaurantService.updateRestaurant(id, request);
     }
     
     @GetMapping("/search")
-    public List<Restaurant> searchRestaurants(@RequestParam String keyword)  {
+    public List<RestaurantResponse> searchRestaurants(@RequestParam String keyword)  {
         System.out.println("RestaurantController.searchRestaurants()");
         return restaurantService.searchRestaurants(keyword);
     }
